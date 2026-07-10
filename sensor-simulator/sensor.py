@@ -19,7 +19,7 @@ baseline_data = np.array([
     [21.0, 40.0, 10.0, 20.0],
     [23.0, 48.0, 30.0, 35.0]
 ])
-iso_forest = IsolationForest(contamination=0.1, random_state=42)
+iso_forest = IsolationForest(n_estimators=10, contamination=0.1, random_state=42)
 iso_forest.fit(baseline_data)
 
 def detect_anomaly(state):

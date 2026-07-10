@@ -1,18 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { AlertCircle, AlertTriangle, ShieldCheck } from 'lucide-react';
 
-function AlertLog({ token }) {
-  const [alerts, setAlerts] = useState([]);
-
-  useEffect(() => {
-    fetch('http://localhost:3000/api/alerts', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(data => setAlerts(data))
-      .catch(err => console.error(err));
-  }, [token]);
-
+function AlertLog({ alerts }) {
   return (
     <div className="glass-card alert-log-card">
       <div className="card-header">

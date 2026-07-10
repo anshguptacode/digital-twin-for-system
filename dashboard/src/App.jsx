@@ -7,7 +7,8 @@ import AlertLog from './components/AlertLog';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import './index.css';
 
-const SOCKET_URL = 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL || '';
+const SOCKET_URL = import.meta.env.VITE_API_URL || undefined;
 
 import WebGLMap from './components/WebGLMap';
 
@@ -16,6 +17,7 @@ function App() {
   const [userRole, setUserRole] = useState(localStorage.getItem('twin_role') || 'viewer');
   const [telemetry, setTelemetry] = useState({});
   const [history, setHistory] = useState([]);
+  const [alerts, setAlerts] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
   const [selectedRack, setSelectedRack] = useState('rack_A');
   const [globalAc, setGlobalAc] = useState(false);
@@ -28,7 +30,7 @@ function App() {
   useEffect(() => {
     if (!token) return;
 
-    fetch(`${SOCKET_URL}/api/history`, {
+    fetch(`${API_URL}/api/history`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(res => {
@@ -41,6 +43,13 @@ function App() {
         handleLogout();
       });
 
+    fetch(`${API_URL}/api/alerts`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => setAlerts(data))
+      .catch(err => console.error("Failed to fetch alerts", err));
+
     const newSocket = io(SOCKET_URL, { auth: { token } });
     setSocket(newSocket);
 
@@ -49,6 +58,10 @@ function App() {
       if (err.message === 'Authentication error') handleLogout();
     });
     newSocket.on('disconnect', () => setIsConnected(false));
+
+    newSocket.on('alert', (alertData) => {
+      setAlerts(prev => [alertData, ...prev]);
+    });
 
     newSocket.on('telemetry', (data) => {
       setTelemetry(prev => ({ ...prev, [data.sensor_id]: data }));
@@ -90,7 +103,7 @@ function App() {
     if (!chatInput) return;
     setChatResponse('Thinking...');
     try {
-      const res = await fetch(`${SOCKET_URL}/api/chat`, {
+      const res = await fetch(`${API_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ prompt: chatInput })
@@ -269,7 +282,7 @@ function App() {
           </div>
 
           {/* Alert Log */}
-          <AlertLog token={token} />
+          <AlertLog alerts={alerts} />
         </div>
         </>
       )}

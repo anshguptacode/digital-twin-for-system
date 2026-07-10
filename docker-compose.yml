@@ -19,11 +19,12 @@ services:
     environment:
       - DB_DRIVER=influxdb
       - INFLUX_URL=http://influxdb:8086
-      - INFLUX_TOKEN=my-super-secret-auth-token
-      - INFLUX_ORG=digital_twin
-      - INFLUX_BUCKET=telemetry
+      - INFLUX_TOKEN=super_secret_influx_token_123
+      - INFLUX_ORG=digital_twin_org
+      - INFLUX_BUCKET=telemetry_bucket
       - REDIS_URL=redis://redis:6379
-      - MQTT_BROKER=mqtt://emqx:1883
+      - MQTT_BROKER=mqtt://mosquitto:1883
+      - JWT_SECRET=production_secure_jwt_secret_991
     depends_on:
       - influxdb
       - redis
@@ -58,6 +59,15 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    restart: unless-stopped
+
+  sensor-simulator:
+    build: ./sensor-simulator
+    environment:
+      - MQTT_BROKER=mosquitto
+      - MQTT_BROKER_PORT=1883
+    depends_on:
+      - mosquitto
     restart: unless-stopped
 
 volumes:

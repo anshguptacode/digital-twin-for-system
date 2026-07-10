@@ -452,9 +452,33 @@ io.on('connection', (socket) => {
 });
 
 if (require.main === module) {
-  server.listen(PORT, () => {
+  const httpServer = server.listen(PORT, () => {
     logger.info(`Backend server listening on port ${PORT}`);
   });
+
+  const gracefulShutdown = () => {
+    logger.info("Received termination signal, shutting down gracefully...");
+    httpServer.close(() => {
+      logger.info("HTTP server closed.");
+      if (mqttClient) mqttClient.end(false, () => logger.info("MQTT client disconnected"));
+      Promise.all([pubClient.quit(), subClient.quit()]).then(() => {
+        logger.info("Redis clients disconnected");
+        db.close((err) => {
+          if (err) logger.error({ err }, "SQLite close error");
+          else logger.info("SQLite database closed.");
+          process.exit(0);
+        });
+      }).catch(() => process.exit(1));
+    });
+    
+    setTimeout(() => {
+      logger.error("Could not close connections in time, forcefully shutting down");
+      process.exit(1);
+    }, 10000).unref();
+  };
+
+  process.on('SIGTERM', gracefulShutdown);
+  process.on('SIGINT', gracefulShutdown);
 }
 
 module.exports = app;

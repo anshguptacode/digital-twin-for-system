@@ -13,7 +13,8 @@ function Login({ onLoginSuccess }) {
     setError('');
 
     try {
-      const res = await fetch('http://localhost:3000/api/login', {
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const res = await fetch(`${apiUrl}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
@@ -23,7 +24,8 @@ function Login({ onLoginSuccess }) {
 
       if (res.ok) {
         localStorage.setItem('twin_token', data.token);
-        onLoginSuccess(data.token);
+        localStorage.setItem('twin_role', data.role);
+        onLoginSuccess(data.token, data.role);
       } else {
         setError(data.error || 'Login failed');
       }
