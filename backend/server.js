@@ -461,7 +461,7 @@ if (require.main === module) {
     httpServer.close(() => {
       logger.info("HTTP server closed.");
       if (mqttClient) mqttClient.end(false, () => logger.info("MQTT client disconnected"));
-      Promise.all([pubClient.quit(), subClient.quit()]).then(() => {
+      Promise.all([pubClient.disconnect(), subClient.disconnect()]).then(() => {
         logger.info("Redis clients disconnected");
         db.close((err) => {
           if (err) logger.error({ err }, "SQLite close error");
@@ -480,5 +480,12 @@ if (require.main === module) {
   process.on('SIGTERM', gracefulShutdown);
   process.on('SIGINT', gracefulShutdown);
 }
+
+app.shutdown = async () => {
+  if (mqttClient) mqttClient.end(true);
+  try { await pubClient.disconnect(); } catch(e){}
+  try { await subClient.disconnect(); } catch(e){}
+  db.close();
+};
 
 module.exports = app;

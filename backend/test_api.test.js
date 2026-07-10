@@ -2,6 +2,9 @@ const request = require('supertest');
 const app = require('./server');
 
 describe('API Endpoints', () => {
+  afterAll(async () => {
+    if (app.shutdown) await app.shutdown();
+  });
   it('GET /api/health should return ok', async () => {
     const res = await request(app).get('/api/health');
     expect(res.statusCode).toEqual(200);
