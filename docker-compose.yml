@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: digital_twin_broker
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_DRIVER=influxdb
+      - INFLUX_URL=http://influxdb:8086
+      - INFLUX_TOKEN=my-super-secret-auth-token
+      - INFLUX_ORG=digital_twin
+      - INFLUX_BUCKET=telemetry
+      - REDIS_URL=redis://redis:6379
+      - MQTT_BROKER=mqtt://emqx:1883
+    depends_on:
+      - influxdb
+      - redis
+
+  frontend:
+    build: ./dashboard
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+  influxdb:
+    image: influxdb:2.7
+    container_name: digital_twin_influxdb
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=adminpassword
+      - DOCKER_INFLUXDB_INIT_ORG=digital_twin_org
+      - DOCKER_INFLUXDB_INIT_BUCKET=telemetry_bucket
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=super_secret_influx_token_123
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.2
+    container_name: digital_twin_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  mosquitto_data:
+  mosquitto_log:
+  influxdb_data:
+  redis_data:
